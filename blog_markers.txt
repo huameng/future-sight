@@ -1,0 +1,8 @@
+div,class,entry-content
+div,class,content
+div,class,postMain
+div,class,post-content
+div,class,entry
+div,class,postentry
+div,id,contentMain
+body,class,post
