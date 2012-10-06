@@ -1,5 +1,7 @@
 require 'uri'
+require 'open-uri'
 require 'net/http'
+require 'nokogiri'
 
 def realTextScore(text)
   return countNontaggedWords(text) - countTags(text)
@@ -7,11 +9,6 @@ end
 
 def countTags(text)
   return text.count("<")
-  #tagCount = 0
-  #for word in text
-  #  tagCount += word.count("<")
-  #end
-  #return tagCount
 end
 
 def countNontaggedWords(text)
@@ -20,17 +17,11 @@ def countNontaggedWords(text)
   else
     return 0
   end
-  #untaggedCount = 0
-  #for word in text
-  #  if word.count("<") == 0
-  #    ++untaggedCount
-  #  end
-  #end
-  #return untaggedCount
 end
 
 def splitter(html)
-  tokens = html.split(/\s+/)
+  tokens = html.split(/ +/)
+  # puts tokens
   newTokens = []
   newTokens << ""
   pointer = 0
@@ -38,45 +29,43 @@ def splitter(html)
   for token in tokens
     newTokens[pointer] << token
     if newTokens[pointer].match(/<div[^<>]*comment[^<>]*>/)
-      puts "TOKEN"
       return newTokens
     end
     openCount = token.count("<")
     closeCount = token.count(">")
     netTags = netTags + openCount - closeCount
-    #newTokens[pointer] << token
+
     if netTags == 0
       pointer += 1
       newTokens << ""
     end
   end
   return newTokens
-  # combine tokens by making sure tags are combined
+
 end
 
 
-#puts %q(<div id="comments" class="comments-area">)
-#puts %q(<div id="comments" class="comments-area">).match(/<[^<>]*comment[^<>]*>/)
+# IGNORE ANYTHING IN SCRIPT AND STYLE TAGS
+doc = Nokogiri::HTML(open("http://blog.priceonomics.com/post/32944888191/living-in-a-van"))
+doc.xpath("//script").remove
+doc.xpath("//style").remove
 
-#return
+
+splitHtml = splitter(doc.to_s)
 
 
-url = URI.parse("http://refer.ly/blog/most-revealing-interview-question/")
-html = Net::HTTP.get(url)
-#splitHtml = html.split(/\s+/)
-splitHtml = splitter(html)
-puts splitHtml.size
+# then we find our best guess for what the actual blog post is
 bestAns = 0
 best1 = 0
 best2 = 0
 (0..splitHtml.size).each do |pointer1|
-  #puts pointer1
+
   untagged = 0
   tags = 0
   ((pointer1)...splitHtml.size).each do |pointer2|
     untagged += countNontaggedWords(splitHtml[pointer2])
     tags += countTags(splitHtml[pointer2])
-    #thisAns = realTextScore(splitHtml[pointer1, pointer2])
+
     thisAns = untagged - tags
     if thisAns>bestAns
       bestAns = thisAns
@@ -86,7 +75,11 @@ best2 = 0
   end
 end
 
-#puts best1, best2, bestAns
+
 (best1...best2).each do |line|
-  puts splitHtml[line]
+	splitHtml[line] = splitHtml[line].gsub(/<[^<>]*>/, "")
+
+  print splitHtml[line], " "
 end
+
+
