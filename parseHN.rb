@@ -2,9 +2,6 @@ require 'uri'
 require 'net/http'
 
 def extractURIs(html)
-  # puts html
-  #puts html[0]
-  # puts html[-1]
   pattern = /\"https?:\/\/(\S+)\"/
   ycPattern = 'ycombinator.com'
   matches = html.scan(pattern)
